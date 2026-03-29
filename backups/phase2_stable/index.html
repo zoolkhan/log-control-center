@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OUTPOST 23 - LOCAL BRIDGE COMMAND</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="bridge-container">
+        <header class="bridge-header">
+            <div class="status-item">VESSEL: OUTPOST 23 | LOCAL BRIDGE ACTIVE 
+                <button id="audio-toggle" style="margin-left:15px; background:transparent; color:var(--accent-color); border:1px solid var(--accent-color); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">AUDIO: OFF</button> 
+                <select id="psk-limit" style="margin-left:10px; background:#050a0a; color:#ff00ff; border:1px solid #ff00ff; font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">
+                    <option value="0">PSK: OFF</option>
+                    <option value="900">PSK: 15 MIN</option>
+                    <option value="1800">PSK: 30 MIN</option>
+                    <option value="3600">PSK: 60 MIN</option>
+                </select>
+                <button id="size-toggle" style="margin-left:10px; background:transparent; color:var(--accent-color); border:1px solid var(--accent-dim); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">SIZE: NORMAL</button>
+            </div>
+            <div class="status-item clock" id="current-time">00:00:00 UTC</div>
+        </header>
+        <main class="bridge-main">
+            <section class="monitor log-monitor">
+                <div class="split-v">
+                    <div class="log-deck"><div class="monitor-header">DECK A</div><div class="monitor-content" id="log-feed-a">[AWAITING TELEMETRY...]</div></div>
+                    <div class="log-deck"><div class="monitor-header">DECK B <button id="filter-b" style="background:transparent; color:var(--accent-color); border:1px solid var(--accent-dim); font-size:0.6rem; cursor:pointer;">FILTER: OFF</button></div><div class="monitor-content" id="log-feed-b">[AWAITING TELEMETRY...]</div></div>
+                </div>
+            </section>
+            <section class="monitor tactical-monitor">
+                <div class="split-v">
+                    <div class="map-deck"><div class="monitor-header">TACTICAL A <button id="zoom-a" style="background:transparent; color:var(--accent-color); border:1px solid var(--accent-dim); font-size:0.6rem; cursor:pointer; margin-right:5px;">ZOOM: ON</button><select id="limit-a" style="background:#050a0a; color:var(--accent-color); border:1px solid var(--accent-dim); font-size:0.6rem;"><option value="5">5 CONTACTS</option><option value="10">10 CONTACTS</option><option value="20">20 CONTACTS</option></select></div><div class="map-container"><canvas id="map-a"></canvas></div></div>
+                    <div class="map-deck"><div class="monitor-header">TACTICAL B <button id="zoom-b" style="background:transparent; color:var(--accent-color); border:1px solid var(--accent-dim); font-size:0.6rem; cursor:pointer; margin-right:5px;">ZOOM: ON</button><select id="limit-b" style="background:#050a0a; color:var(--accent-color); border:1px solid var(--accent-dim); font-size:0.6rem;"><option value="5">5 CONTACTS</option><option value="10">10 CONTACTS</option><option value="20">20 CONTACTS</option></select></div><div class="map-container"><canvas id="map-b"></canvas></div></div>
+                </div>
+            </section>
+        </main>
+        <footer class="bridge-footer"><div class="scrolling-text">[LOCAL SYSTEM ONLINE] AWAITING PROPAGATION DATA...</div></footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+    "input_adif_files": [
+        "/home/timo/merged.adi"
+    ],
+    "output_adif_file": "/home/timo/bridge/data/merged_output.adi",
+    "varac_log_file": "/home/timo/.wine/drive_c/VarAC/VarAC.log",
+    "propagation_file": "/home/timo/.wine/drive_c/VarAC/BBS/B_radio_propagation_report_today.txt",
+    "update_interval": 5
+}
