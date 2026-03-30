@@ -29,6 +29,16 @@ body { background: var(--bg-color); color: var(--text-color); font-family: 'IBM 
 .log-entry { border-bottom: 1px solid rgba(0,242,255,0.05); padding: 3px 0; display: grid; grid-template-columns: 140px 80px 40px 1fr; white-space: nowrap; }
 .log-entry span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Raw log (Deck B) styling */
+.log-entry .raw-timestamp { grid-column: 1 / 2; white-space: nowrap; padding-right: 5px; }
+.log-entry .raw-log-text { 
+    grid-column: 2 / 5; 
+    white-space: pre-wrap !important; 
+    word-break: break-all !important; 
+    overflow-wrap: break-word !important; 
+    display: block !important; 
+}
+
 .map-container { flex-grow: 1; background: radial-gradient(circle, #1a2a2a 0%, #050a0a 100%); position: relative; overflow: hidden; }
 canvas { width: 100%; height: 100%; }
 
@@ -42,7 +52,10 @@ canvas { width: 100%; height: 100%; }
 .large-font { font-size: 1.2rem; }
 .large-font .monitor-header { font-size: 1.2rem; padding: 10px; }
 .large-font .log-monitor .monitor-content { font-size: 1.1rem; }
-.large-font .log-entry { grid-template-columns: 240px 140px 80px 1fr; line-height: 1.5; white-space: nowrap; }
+.large-font .log-entry { grid-template-columns: 240px 140px 80px 1fr; line-height: 1.5; white-space: normal; } /* Allow wrapping in large mode */
+.large-font .log-entry .raw-timestamp { grid-column: 1 / 2; }
+.large-font .log-entry .raw-log-text { grid-column: 2 / 5; }
+.large-font .bridge-footer { height: 110px; } /* Increased from 80px */
 .large-font .scrolling-text { font-size: 1.8rem; }
 .large-font .status-item { font-size: 1.1rem; }
 .large-font button, .large-font select { font-size: 0.9rem !important; padding: 5px !important; }
@@ -51,10 +64,6 @@ canvas { width: 100%; height: 100%; }
 .deck-a-latest { color: var(--alert-color) !important; font-weight: bold; }
 .callsign-highlight-a { color: var(--alert-color) !important; font-weight: bold; }
 .callsign-highlight-b { color: var(--accent-color) !important; font-weight: bold; }
-
-.split-h { display: flex; flex-direction: column; height: 100%; }
-.split-h .map-deck { border-right: none; border-bottom: 1px solid var(--accent-dim); }
-.split-h .map-deck:last-child { border-bottom: none; }
 
 .split-h { display: flex; flex-direction: column; height: 100%; }
 .split-h .map-deck { border-right: none; border-bottom: 1px solid var(--accent-dim); }

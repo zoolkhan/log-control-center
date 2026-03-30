@@ -3,6 +3,7 @@ import json
 import time
 import requests
 import threading
+import xml.etree.ElementTree as ET
 from flask import Flask, send_from_directory, jsonify, Response, request, make_response
 from datetime import datetime, timezone
 import adif_io
@@ -16,6 +17,8 @@ DEFAULT_CONFIG = {
     "output_adif_file": os.path.expanduser("~/bridge/data/merged_output.adi"),
     "varac_log_file": os.path.expanduser("~/.wine/drive_c/VarAC/VarAC.log"),
     "propagation_file": os.path.expanduser("~/.wine/drive_c/VarAC/BBS/B_radio_propagation_report_today.txt"),
+    "fetch_propagation_data": True,
+    "propagation_fetch_interval": 14400, # 4 hours in seconds
     "update_interval": 5
 }
 
@@ -38,6 +41,66 @@ CONFIG = load_config()
 # Ensure data directory exists
 os.makedirs(os.path.dirname(CONFIG["output_adif_file"]), exist_ok=True)
 
+# Shared state for propagation
+current_propagation_report = "[Propagation data not yet fetched]"
+last_propagation_fetch = 0
+
+# --- PROPAGATION FETCHING LOGIC ---
+def fetch_propagation_data():
+    global current_propagation_report
+    global last_propagation_fetch
+    url = "https://www.hamqsl.com/solarxml.php"
+    print(f"[PROPAGATION] Fetching data from {url}...")
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        
+        root = ET.fromstring(response.content)
+        data = root.find('solardata')
+        if data is None: 
+            print("[PROPAGATION] Could not find 'solardata' tag.")
+            return
+
+        solarflux = data.findtext('solarflux', 'N/A')
+        sunspots = data.findtext('sunspots', 'N/A')
+        aindex = data.findtext('aindex', 'N/A')
+        kindex = data.findtext('kindex', 'N/A')
+        geomagfield = data.findtext('geomagfield', 'N/A')
+        
+        report_parts = [
+            f"Radio Propagation Report ({datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')})",
+            "Solar Data:",
+            f"- Solar Flux: {solarflux}",
+            f"- Sunspots: {sunspots}",
+            f"- A-Index: {aindex}",
+            f"- K-Index: {kindex}",
+            f"- Geomagnetic Field: {geomagfield}",
+            "Band Conditions (Day):"
+        ]
+        
+        calc = data.find('calculatedconditions')
+        if calc is not None:
+            for band in calc.findall("./band[@time='day']"):
+                band_name = band.get('name', 'N/A')
+                condition = band.text.strip() if band.text else 'N/A'
+                report_parts.append(f"- {band_name}: {condition}")
+            
+            report_parts.append("Band Conditions (Night):")
+            for band in calc.findall("./band[@time='night']"):
+                band_name = band.get('name', 'N/A')
+                condition = band.text.strip() if band.text else 'N/A'
+                report_parts.append(f"- {band_name}: {condition}")
+        else:
+            report_parts.append("Band conditions data unavailable.")
+            
+        current_propagation_report = "\n".join(report_parts)
+        last_propagation_fetch = time.time()
+        print("[PROPAGATION] Data fetched successfully.")
+        
+    except Exception as e:
+        current_propagation_report = f"Error fetching propagation data: {e}"
+        print(f"[PROPAGATION] Fetch failed: {e}")
+
 # --- ADIF MERGING LOGIC (Inherited from TALP) ---
 def deduplicate_qsos(qso_list):
     unique_qsos = {}
@@ -55,15 +118,18 @@ def deduplicate_qsos(qso_list):
 
 def generate_adif_string(qso_list):
     parts = []
-    header = {"PROGRAMID": "Bridge ADIF Merger", "CREATED_TIMESTAMP": datetime.now().strftime("%Y%m%d %H%M%S")}
+    # Simplified header that adif_io should be happy with
+    header = {"ADIF_VER": "3.1.0", "PROGRAMID": "Bridge ADIF Merger", "CREATED_TIMESTAMP": datetime.now().strftime("%Y%m%d %H%M%S")}
     for key, value in header.items():
         parts.append(f"<{key}:{len(str(value))}>{value}")
     parts.append("<EOH>")
     for qso in qso_list:
+        # Avoid including header fields in the QSO records
         for key, value in qso.items():
-            if value is not None and str(value).strip() != "":
-                val_str = str(value)
-                parts.append(f"<{key.upper()}:{len(val_str)}>{val_str}")
+            if key.upper() not in ["ADIF_VER", "PROGRAMID", "CREATED_TIMESTAMP"]:
+                if value is not None and str(value).strip() != "":
+                    val_str = str(value)
+                    parts.append(f"<{key.upper()}:{len(val_str)}>{val_str}")
         parts.append("<EOR>")
     return "\n".join(parts)
 
@@ -73,8 +139,10 @@ def merge_adif_files():
     for file_path in CONFIG["input_adif_files"]:
         if os.path.exists(file_path):
             try:
+                # read_from_file returns (qsos, header)
                 qsos, _ = adif_io.read_from_file(file_path)
-                all_qsos.extend(qsos)
+                if qsos:
+                    all_qsos.extend(qsos)
             except Exception as e:
                 print(f"[ADIF ENGINE] Error reading {file_path}: {e}")
     
@@ -84,7 +152,8 @@ def merge_adif_files():
 
     # Deduplicate and sort
     deduped = deduplicate_qsos(all_qsos)
-    deduped.sort(key=lambda q: (q.get('QSO_DATE', '0'), q.get('TIME_ON', '0')), reverse=True)
+    # Sort by date and time descending
+    deduped.sort(key=lambda q: (str(q.get('QSO_DATE', '00000000')), str(q.get('TIME_ON', '000000'))), reverse=True)
     
     try:
         adif_string = generate_adif_string(deduped)
@@ -117,6 +186,12 @@ def monitor_adif_files():
             
             if should_merge:
                 merge_adif_files()
+
+            # --- Propagation Data Fetching ---
+            if CONFIG.get("fetch_propagation_data", True):
+                now = time.time()
+                if now - last_propagation_fetch > CONFIG.get("propagation_fetch_interval", 14400):
+                    fetch_propagation_data()
                 
         except Exception as e:
             print(f"[MONITOR] Error in monitoring thread: {e}")
@@ -165,6 +240,10 @@ def get_source_b():
 
 @app.route('/data/propagation.txt')
 def get_propagation():
+    if CONFIG.get("fetch_propagation_data", True):
+        return nocache(Response(current_propagation_report, mimetype='text/plain'))
+    
+    # Fallback to file if fetching is disabled
     if not os.path.exists(CONFIG["propagation_file"]): return "PROPAGATION_LINK_DOWN", 200
     with open(CONFIG["propagation_file"], 'r') as f:
         return nocache(Response(f.read(), mimetype='text/plain'))
@@ -206,6 +285,6 @@ def static_files(path):
     return send_from_directory('.', path)
 
 if __name__ == "__main__":
-    print("--- LOG CONTROL CENTER by OH8XAT v1.0 ACTIVE ---")
+    print("--- LOG CONTROL CENTER by OH8XAT v1.1 ACTIVE ---")
     print("UI available at: http://localhost:5000")
     app.run(host='0.0.0.0', port=5000)

@@ -207,7 +207,20 @@ class BridgeMonitor {
                     const highlightClass = this.id === 'a' ? 'callsign-highlight-a' : 'callsign-highlight-b';
                     txt = txt.replace(regex, (m, p1, p2) => (p1||'') + '<span class="' + highlightClass + '">' + l.CALL + '</span>' + (p2||''));
                 }
-                return '<div class="log-entry" style="color:'+color+'"><span style="grid-column:span 4">'+txt+'</span></div>';
+                
+                // Identify timestamp and message
+                let timestamp = "";
+                let msg = txt;
+                const mTs = txt.match(/^(\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2} - )/);
+                if (mTs) {
+                    timestamp = mTs[1];
+                    msg = txt.substring(timestamp.length);
+                }
+
+                return '<div class="log-entry raw-entry" style="color:'+color+'">' +
+                       '<span class="raw-timestamp">' + timestamp + '</span>' +
+                       '<span class="raw-log-text">' + msg + '</span>' +
+                       '</div>';
             }
         }).join('');
         if(this.feed.innerHTML !== newHtml) this.feed.innerHTML = newHtml;
@@ -327,7 +340,14 @@ const deckB = new BridgeMonitor('b', 'data/source_b.log', '#00f2ff', 'raw');
 async function refreshPropagation() {
     try {
         const r = await fetch('data/propagation.txt?t='+Date.now());
-        if(r.ok) { const t = await r.text(); propagationText = t.replace(/\n/g, ' | ').replace(/\r/g, '').trim(); updateFooter(); }
+        if(r.ok) { 
+            const t = await r.text(); 
+            propagationText = t.split('\n')
+                               .map(line => line.trim())
+                               .filter(line => line.length > 0)
+                               .join(' | ');
+            updateFooter(); 
+        }
     } catch(e){}
 }
 
@@ -359,13 +379,26 @@ async function refreshPsk() {
 function updateFooter() {
     const footer = document.querySelector('.scrolling-text');
     if(!footer) return;
-    let statusPrefix = ""; let isOffline = false;
-    if(heartbeatFailCount > 3) { statusPrefix = "<span style='color:#ff3c00; font-weight:bold;'>[STATION LINK OFFLINE - DATA UNREACHABLE]</span> "; isOffline = true; } 
-    else if(lastHeartbeat) {
+    let statusPrefix = "<span style='color:#00ff41;'>[LOCAL SYSTEM ONLINE]</span> ";
+    let isOffline = false;
+    
+    if(heartbeatFailCount > 3) { 
+        statusPrefix = "<span style='color:#ff3c00; font-weight:bold;'>[STATION LINK OFFLINE - DATA UNREACHABLE]</span> "; 
+        isOffline = true; 
+    } else if(lastHeartbeat) {
         const lastSeen = new Date(lastHeartbeat.replace(' UTC', 'Z'));
-        const now = new Date(); const diffSeconds = (now - lastSeen) / 1000;
-        if(diffSeconds > 120) { const timeStr = lastHeartbeat.split(' ')[1]; statusPrefix = "<span style='color:#ff3c00; font-weight:bold;'>[STATION LINK OFFLINE SINCE " + timeStr + " UTC]</span> "; isOffline = true; }
+        const now = new Date(); 
+        const diffSeconds = (now - lastSeen) / 1000;
+        if(diffSeconds > 120) { 
+            const timeStr = lastHeartbeat.split(' ')[1]; 
+            statusPrefix = "<span style='color:#ff3c00; font-weight:bold;'>[STATION LINK OFFLINE SINCE " + timeStr + " UTC]</span> "; 
+            isOffline = true; 
+        }
+    } else {
+        statusPrefix = "<span style='color:#00ff41;'>[AWAITING FIRST HEARTBEAT]</span> ";
+        isOffline = true;
     }
+    
     if(isOffline) footer.style.textShadow = "0 0 10px #ff3c00"; else footer.style.textShadow = "none";
     footer.innerHTML = statusPrefix + "[PROPAGATION DATA] " + propagationText;
 }
