@@ -31,21 +31,31 @@ Built for high-performance station monitoring and seamless log consolidation.
 
 ## 🛠️ Installation & Setup (Step-by-Step)
 
-### 1. Prerequisites
+### 🪟 Windows (Recommended for Windows Users)
+**Download the standalone executable:**  
+👉 [**Download LogControlCenterBridge_v1.2.exe**](https://github.com/zoolkhan/log-control-center/releases/download/v1.2/LogControlCenterBridge_v1.2.exe)
+
+*No installation required. Just download, run the EXE, and it will handle everything.*
+
+---
+
+### 🐧 Linux (Recommended for Linux Users)
+
+#### 1. Prerequisites
 Ensure you have Python 3 and the `venv` module installed:
 ```bash
 sudo apt update
 sudo apt install python3 python3-venv
 ```
 
-### 2. Setup Environment
+#### 2. Setup Environment
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Running the Application
+#### 3. Running the Application
 ```bash
 python3 app.py
 ```
