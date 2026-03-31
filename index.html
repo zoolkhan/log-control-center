@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Control Center by OH8XAT v1.1</title>
+    <title>Log Control Center by OH8XAT v1.2</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,57 +13,154 @@
     <div class="scanlines"></div>
     <div class="bridge-container">
         <header class="bridge-header">
-            <div class="status-item">Log Control Center by OH8XAT v1.1 | LOCAL BRIDGE ACTIVE 
+            <div class="status-item">Log Control Center by OH8XAT v1.2 | LOCAL BRIDGE ACTIVE 
+                <button id="manual-log-btn" style="margin-left:15px; background:transparent; color:#ff00ff; border:1px solid #ff00ff; font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">MANUAL LOG</button>
                 <button id="audio-toggle" style="margin-left:15px; background:transparent; color:var(--accent-color); border:1px solid var(--accent-color); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">AUDIO: OFF</button> 
-                <select id="psk-limit" style="margin-left:10px; background:#050a0a; color:#ff00ff; border:1px solid #ff00ff; font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">
-                    <option value="0">PSK: OFF</option>
-                    <option value="900">PSK: 15 MIN</option>
-                    <option value="1800">PSK: 30 MIN</option>
-                    <option value="3600">PSK: 60 MIN</option>
-                </select>
-                <button id="size-toggle" style="margin-left:10px; background:transparent; color:var(--accent-color); border:1px solid var(--accent-dim); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">SIZE: NORMAL</button>
-                <button id="config-open" style="margin-left:10px; background:transparent; color:#ff0000; border:1px solid #ff0000; font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px; font-weight:bold;">CONFIG</button>
+                <button id="config-open" style="margin-left:15px; background:transparent; color:var(--alert-color); border:1px solid var(--alert-color); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">CONFIG</button>
+                <button id="psk-cycle" style="margin-left:10px; background:transparent; color:#ff00ff; border:1px solid #ff00ff; font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">PSK: 1 HOUR</button>
             </div>
-            <div class="status-item clock" id="current-time">00:00:00 UTC</div>
+            <div class="header-right">
+                <span id="utc-clock">00:00:00 UTC</span>
+                <button id="font-toggle" style="margin-left:10px; background:transparent; color:var(--accent-color); border:1px solid var(--accent-color); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">SIZE: NORM</button>
+            </div>
         </header>
 
-    <!-- SETTINGS MODAL -->
-    <div id="config-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; font-family:'IBM Plex Mono', monospace; color:#00FF41;">
-        <div style="max-width:600px; margin:50px auto; background:#050a0a; border:2px solid #ff0000; padding:20px; box-shadow:0 0 20px rgba(255,0,0,0.3);">
-            <h2 style="color:#ff0000; margin-top:0;">TACTICAL BRIDGE CONFIGURATION</h2>
-            <div id="config-form">
-                <p>ADIF INPUT FILES (one per line):</p>
-                <textarea id="conf-adifs" style="width:100%; height:100px; background:#1a1a1a; color:#00FF41; border:1px solid #333; padding:5px;"></textarea>
-                
-                <p>VARAC LOG PATH (Deck B):</p>
-                <input id="conf-varac" type="text" style="width:100%; background:#1a1a1a; color:#00FF41; border:1px solid #333; padding:5px;">
-                
-                <p>OUTPUT MERGED ADIF:</p>
-                <input id="conf-output" type="text" style="width:100%; background:#1a1a1a; color:#00FF41; border:1px solid #333; padding:5px;">
-                
-                <div style="margin-top:20px; display:flex; justify-content:space-between;">
-                    <button id="config-save" style="background:#ff0000; color:#fff; border:none; padding:10px 20px; cursor:pointer;">SAVE & RELOAD</button>
-                    <button id="config-close" style="background:#333; color:#fff; border:none; padding:10px 20px; cursor:pointer;">CANCEL</button>
+        <main class="bridge-main">
+            <section class="monitor log-monitor">
+                <header class="monitor-header">
+                    <span>DECK A: STATION LOG</span>
+                    <select id="limit-a" class="limit-select">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                    </select>
+                </header>
+                <div id="log-feed-a" class="monitor-content"></div>
+            </section>
+
+            <section class="monitor log-monitor">
+                <header class="monitor-header">
+                    <span>DECK B: LIVE FEED</span>
+                    <div class="monitor-controls">
+                        <button id="filter-b" class="control-btn">FILTER: OFF</button>
+                        <select id="limit-b" class="limit-select">
+                            <option value="50">50</option>
+                            <option value="100" selected>100</option>
+                            <option value="200">200</option>
+                        </select>
+                    </div>
+                </header>
+                <div id="log-feed-b" class="monitor-content"></div>
+            </section>
+
+            <section class="monitor tactical-monitor" style="grid-column: span 2;">
+                <div class="monitor-content split-v" style="padding:0;">
+                    <div class="map-deck">
+                        <header class="monitor-header">
+                            <span>TACTICAL A</span>
+                            <button id="zoom-a" class="control-btn">ZOOM: ON</button>
+                        </header>
+                        <div class="map-container" id="map-container-a">
+                            <canvas id="map-a"></canvas>
+                        </div>
+                    </div>
+                    <div class="map-deck" style="border-left: 2px solid var(--accent-dim);">
+                        <header class="monitor-header">
+                            <span>TACTICAL B</span>
+                            <button id="zoom-b" class="control-btn">ZOOM: ON</button>
+                        </header>
+                        <div class="map-container" id="map-container-b">
+                            <canvas id="map-b"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="bridge-footer"><div class="scrolling-text">[LOCAL SYSTEM ONLINE] [AWAITING PROPAGATION DATA]</div></footer>
+    </div>
+
+    <!-- Manual Log Modal -->
+    <div id="manual-log-modal" class="modal">
+        <div class="modal-content">
+            <header class="modal-header">
+                <span>MANUAL QSO ENTRY</span>
+                <span id="close-modal" class="close-btn">&times;</span>
+            </header>
+            <form id="manual-log-form" class="modal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>CALLSIGN</label>
+                        <input type="text" id="qso-call" required>
+                    </div>
+                    <div class="form-group">
+                        <label>BAND</label>
+                        <input type="text" id="qso-band">
+                    </div>
+                    <div class="form-group">
+                        <label>MODE</label>
+                        <input type="text" id="qso-mode">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>RST SENT</label>
+                        <input type="text" id="qso-rst-s">
+                    </div>
+                    <div class="form-group">
+                        <label>RST RCVD</label>
+                        <input type="text" id="qso-rst-r">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>NAME</label>
+                        <input type="text" id="qso-name">
+                    </div>
+                    <div class="form-group">
+                        <label>QTH</label>
+                        <input type="text" id="qso-qth">
+                    </div>
+                </div>
+                <div class="form-group" style="flex-grow: 1;">
+                    <label>COMMENT</label>
+                    <textarea id="qso-comment" placeholder="Notes..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancel-qso" class="cancel-btn">ABORT</button>
+                    <button type="submit" class="submit-btn">LOG QSO</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Config Modal -->
+    <div id="config-modal" class="modal">
+        <div class="modal-content">
+            <header class="modal-header">
+                <span>BRIDGE CONFIGURATION</span>
+                <span id="config-close" class="close-btn">&times;</span>
+            </header>
+            <div class="modal-form">
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label>ADIF INPUT FILES (One per line)</label>
+                    <textarea id="conf-adifs" rows="4" style="width:100%; height:100px;"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label>VARAC LOG PATH</label>
+                    <input type="text" id="conf-varac" style="width:100%;">
+                </div>
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label>OUTPUT MERGED ADIF</label>
+                    <input type="text" id="conf-output" style="width:100%;">
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="config-save" class="submit-btn">SAVE & RELOAD</button>
                 </div>
             </div>
         </div>
     </div>
-        <main class="bridge-main">
-            <section class="monitor log-monitor">
-                <div class="split-v">
-                    <div class="log-deck"><div class="monitor-header">DECK A</div><div class="monitor-content" id="log-feed-a">[AWAITING TELEMETRY...]</div></div>
-                    <div class="log-deck"><div class="monitor-header">DECK B <button id="filter-b" style="background:transparent; color:var(--accent-color); border:1px solid var(--accent-dim); font-size:0.6rem; cursor:pointer;">FILTER: OFF</button></div><div class="monitor-content" id="log-feed-b">[AWAITING TELEMETRY...]</div></div>
-                </div>
-            </section>
-            <section class="monitor tactical-monitor">
-                <div class="split-v">
-                    <div class="map-deck"><div class="monitor-header">TACTICAL A <button id="zoom-a" style="background:transparent; color:var(--accent-color); border:1px solid var(--accent-dim); font-size:0.6rem; cursor:pointer; margin-right:5px;">ZOOM: ON</button><select id="limit-a" style="background:#050a0a; color:var(--accent-color); border:1px solid var(--accent-dim); font-size:0.6rem;"><option value="5">5 CONTACTS</option><option value="10">10 CONTACTS</option><option value="20">20 CONTACTS</option></select></div><div class="map-container"><canvas id="map-a"></canvas></div></div>
-                    <div class="map-deck"><div class="monitor-header">TACTICAL B <button id="zoom-b" style="background:transparent; color:var(--accent-color); border:1px solid var(--accent-dim); font-size:0.6rem; cursor:pointer; margin-right:5px;">ZOOM: ON</button><select id="limit-b" style="background:#050a0a; color:var(--accent-color); border:1px solid var(--accent-dim); font-size:0.6rem;"><option value="5">5 CONTACTS</option><option value="10">10 CONTACTS</option><option value="20">20 CONTACTS</option></select></div><div class="map-container"><canvas id="map-b"></canvas></div></div>
-                </div>
-            </section>
-        </main>
-        <footer class="bridge-footer"><div class="scrolling-text">[LOCAL SYSTEM ONLINE] AWAITING PROPAGATION DATA...</div></footer>
-    </div>
+
     <script src="script.js"></script>
 </body>
 </html>

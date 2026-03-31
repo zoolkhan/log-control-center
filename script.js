@@ -10,8 +10,17 @@ let lastHeartbeat = null;
 let heartbeatFailCount = 0;
 let propagationText = "[AWAITING DATA]";
 let pskSpots = [];
-let isPskActive = false;
-let pskSeconds = 0;
+
+// --- PERSISTENCE HELPERS ---
+const getSetting = (key, def) => {
+    const val = localStorage.getItem('bridge_' + key);
+    if (val === null) return def;
+    try { return JSON.parse(val); } catch(e) { return val; }
+};
+const setSetting = (key, val) => localStorage.setItem('bridge_' + key, JSON.stringify(val));
+
+let isPskActive = getSetting('psk_active', true);
+let pskSeconds = getSetting('psk_seconds', 3600);
 
 const GLOBAL_CALL_CACHE = {};
 const PREFIX_MAP = {'DL':[51,10],'F':[46,2],'G':[54,-2],'M':[54,-2],'K':[37,-95],'W':[37,-95],'OH':[64,26],'LA':[60,10],'SM':[60,15],'OZ':[56,10],'UR':[49,31],'UA':[55,37],'4Z':[31,35],'4X':[32,34],'ES':[58,25],'YL':[56,24],'LY':[55,23],'SP':[52,19],'OK':[49,14],'OM':[48,19],'HA':[47,19],'S5':[46,14],'YU':[44,20],'LZ':[42,25],'SV':[38,23],'EA':[40,-3],'I':[41,12],'HB':[46,8],'OE':[47,14],'PA':[52,5],'ON':[50,4]};
@@ -58,7 +67,8 @@ const maidenheadToLatLon = (g) => {
 class BridgeMonitor {
     constructor(id, sourcePath, color, type = 'adif') {
         this.id = id; this.sourcePath = sourcePath; this.color = color;
-        this.type = type; this.logs = []; this.isFilterActive = false; this.isZoomActive = true;
+        this.type = type; this.logs = []; this.isFilterActive = false; 
+        this.isZoomActive = getSetting('zoom_' + id, true);
         this.canvas = document.getElementById('map-' + id);
         this.feed = document.getElementById('log-feed-' + id);
         this.limitSelect = document.getElementById('limit-' + id);
@@ -67,7 +77,15 @@ class BridgeMonitor {
         this.lastRawLine = null;
         
         if(this.filterBtn) this.filterBtn.onclick = () => { this.isFilterActive = !this.isFilterActive; this.filterBtn.innerText = 'FILTER: ' + (this.isFilterActive ? 'ON' : 'OFF'); this.updateFeed(); };
-        if(this.zoomBtn) this.zoomBtn.onclick = () => { this.isZoomActive = !this.isZoomActive; this.zoomBtn.innerText = 'ZOOM: ' + (this.isZoomActive ? 'ON' : 'OFF'); this.draw(); };
+        if(this.zoomBtn) {
+            this.zoomBtn.innerText = 'ZOOM: ' + (this.isZoomActive ? 'ON' : 'OFF');
+            this.zoomBtn.onclick = () => { 
+                this.isZoomActive = !this.isZoomActive; 
+                setSetting('zoom_' + id, this.isZoomActive);
+                this.zoomBtn.innerText = 'ZOOM: ' + (this.isZoomActive ? 'ON' : 'OFF'); 
+                this.draw(); 
+            };
+        }
     }
     parse(text) {
         if (!text) return [];
@@ -86,16 +104,6 @@ class BridgeMonitor {
             });
         }
     }
-    getCoords(log) {
-        let g = log.GRIDSQUARE;
-        if(!g && log.CALL) g = GLOBAL_CALL_CACHE[log.CALL];
-        if(g) return maidenheadToLatLon(g);
-        if(log.CALL){
-            const p=PREFIX_MAP[log.CALL.slice(0,2)]||PREFIX_MAP[log.CALL.slice(0,1)];
-            if(p)return{lat:p[0],lon:p[1]};
-        }
-        return null;
-    }
     draw() {
         if (!this.canvas || !worldData) return;
         const ctx = this.canvas.getContext('2d');
@@ -110,8 +118,6 @@ class BridgeMonitor {
             const lonDiff = Math.abs(latestCoords.lon - CONFIG.homeCoords.lon);
             const tacticalSection = document.querySelector('.tactical-monitor .split-v') || document.querySelector('.tactical-monitor .split-h');
             if (tacticalSection) {
-                // If horizontal (lon) diff is much larger than vertical (lat), or if it's generally East-West (e.g. USA)
-                // we prefer vertical stacking (maps above each other) to get more side-to-side real estate.
                 if (lonDiff > 45 || lonDiff > latDiff * 1.5) {
                     tacticalSection.className = 'split-h';
                 } else {
@@ -208,7 +214,6 @@ class BridgeMonitor {
                     txt = txt.replace(regex, (m, p1, p2) => (p1||'') + '<span class="' + highlightClass + '">' + l.CALL + '</span>' + (p2||''));
                 }
                 
-                // Identify timestamp and message
                 let timestamp = "";
                 let msg = txt;
                 const mTs = txt.match(/^(\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2} - )/);
@@ -254,27 +259,45 @@ class BridgeMonitor {
             }
         } catch(e){}
     }
+    getCoords(log) {
+        let g = log.GRIDSQUARE;
+        if(!g && log.CALL) g = GLOBAL_CALL_CACHE[log.CALL];
+        if(g) return maidenheadToLatLon(g);
+        if(log.CALL){
+            const p=PREFIX_MAP[log.CALL.slice(0,2)]||PREFIX_MAP[log.CALL.slice(0,1)];
+            if(p)return{lat:p[0],lon:p[1]};
+        }
+        return null;
+    }
 }
 
 class BridgeAudio {
     constructor() {
-        this.ctx = null; this.isMuted = true; this.hum = null;
+        this.ctx = null; this.isMuted = getSetting('audio_muted', false); this.hum = null;
         this.btn = document.getElementById('audio-toggle');
-        if(this.btn) this.btn.onclick = () => { this.toggle(); };
+        if(this.btn) {
+            this.btn.innerText = 'AUDIO: ' + (this.isMuted ? 'OFF' : 'ON');
+            this.btn.style.borderColor = this.isMuted ? 'var(--accent-dim)' : 'var(--accent-color)';
+            this.btn.onclick = () => { this.toggle(); };
+        }
     }
     init() {
         if(this.ctx) return;
         this.ctx = new (window.AudioContext || window.webkitAudioContext)();
         this.hum = this.ctx.createOscillator(); const g = this.ctx.createGain();
-        this.hum.type = 'sawtooth'; this.hum.frequency.setValueAtTime(40, this.ctx.currentTime);
+        this.hum.type = 'sawtooth'; this.hum.frequency.setValueAtTime(this.isMuted ? 0 : 40, this.ctx.currentTime);
         g.gain.setValueAtTime(0.01, this.ctx.currentTime);
         const lpf = this.ctx.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 100;
         this.hum.connect(lpf).connect(g).connect(this.ctx.destination);
-        this.hum.start(); this.ping(880, 0.1); setTimeout(()=>this.ping(440, 0.1), 100);
+        this.hum.start(); 
+        if(!this.isMuted) {
+            this.ping(880, 0.1); setTimeout(()=>this.ping(440, 0.1), 100);
+        }
     }
     toggle() {
         if(!this.ctx) this.init();
         this.isMuted = !this.isMuted;
+        setSetting('audio_muted', this.isMuted);
         if (this.ctx.state === 'suspended') this.ctx.resume();
         if(this.hum) this.hum.frequency.setTargetAtTime(this.isMuted ? 0 : 40, this.ctx.currentTime, 0.1);
         if(this.btn) { this.btn.innerText = 'AUDIO: ' + (this.isMuted ? 'OFF' : 'ON'); this.btn.style.borderColor = this.isMuted ? 'var(--accent-dim)' : 'var(--accent-color)'; }
@@ -289,6 +312,106 @@ class BridgeAudio {
         o.connect(g).connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime + duration);
     }
     chirp() { if(!this.ctx || this.isMuted) return; this.ping(1200, 0.08); setTimeout(() => this.ping(1500, 0.08), 80); }
+}
+
+const audio = new BridgeAudio();
+const deckA = new BridgeMonitor('a', 'data/source_a.adi', '#ff6600', 'adif');
+const deckB = new BridgeMonitor('b', 'data/source_b.log', '#00f2ff', 'raw');
+
+// --- SIZE PERSISTENCE ---
+const sizeBtn = document.getElementById('font-toggle');
+if(sizeBtn) {
+    const isLarge = getSetting('font_large', true);
+    if(isLarge) document.body.classList.add('large-font');
+    sizeBtn.innerText = 'SIZE: ' + (isLarge ? 'LARGE' : 'NORMAL');
+    sizeBtn.style.borderColor = isLarge ? 'var(--accent-color)' : 'var(--accent-dim)';
+    sizeBtn.onclick = () => {
+        const currentlyLarge = document.body.classList.toggle('large-font');
+        setSetting('font_large', currentlyLarge);
+        sizeBtn.innerText = 'SIZE: ' + (currentlyLarge ? 'LARGE' : 'NORMAL');
+        sizeBtn.style.borderColor = currentlyLarge ? 'var(--accent-color)' : 'var(--accent-dim)';
+        deckA.draw(); deckB.draw();
+    };
+}
+
+// --- PSK PERSISTENCE & CYCLING ---
+const pskCycleBtn = document.getElementById('psk-cycle');
+const pskStates = [
+    { label: 'OFF', value: 0 },
+    { label: '15 MIN', value: 900 },
+    { label: '30 MIN', value: 1800 },
+    { label: '1 HOUR', value: 3600 }
+];
+
+if(pskCycleBtn) {
+    const updatePskBtn = () => {
+        const state = pskStates.find(s => s.value === pskSeconds) || pskStates[3];
+        pskCycleBtn.innerText = 'PSK: ' + state.label;
+        pskCycleBtn.style.borderColor = (pskSeconds > 0) ? '#ff00ff' : 'var(--accent-dim)';
+        pskCycleBtn.style.color = (pskSeconds > 0) ? '#ff00ff' : 'var(--accent-dim)';
+    };
+
+    updatePskBtn();
+
+    pskCycleBtn.onclick = () => {
+        let currentIndex = pskStates.findIndex(s => s.value === pskSeconds);
+        let nextIndex = (currentIndex + 1) % pskStates.length;
+        
+        pskSeconds = pskStates[nextIndex].value;
+        isPskActive = pskSeconds > 0;
+        
+        setSetting('psk_active', isPskActive);
+        setSetting('psk_seconds', pskSeconds);
+        
+        updatePskBtn();
+        
+        if(isPskActive) { refreshPsk(); }
+        else { pskSpots = []; deckA.draw(); deckB.draw(); }
+    };
+}
+
+// --- MANUAL LOG MANAGEMENT ---
+const manualModal = document.getElementById('manual-log-modal');
+const manualBtn = document.getElementById('manual-log-btn');
+const manualClose = document.getElementById('close-modal');
+const manualCancel = document.getElementById('cancel-qso');
+const manualForm = document.getElementById('manual-log-form');
+
+if (manualBtn) manualBtn.onclick = () => { manualModal.style.display = 'block'; };
+if (manualClose) manualClose.onclick = () => { manualModal.style.display = 'none'; };
+if (manualCancel) manualCancel.onclick = () => { manualModal.style.display = 'none'; };
+
+if (manualForm) {
+    manualForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const data = {
+            call: document.getElementById('qso-call').value,
+            band: document.getElementById('qso-band').value,
+            mode: document.getElementById('qso-mode').value,
+            rst_sent: document.getElementById('qso-rst-s').value,
+            rst_rcvd: document.getElementById('qso-rst-r').value,
+            name: document.getElementById('qso-name').value,
+            qth: document.getElementById('qso-qth').value,
+            comment: document.getElementById('qso-comment').value
+        };
+
+        try {
+            const r = await fetch('/api/add_qso', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (r.ok) {
+                manualModal.style.display = 'none';
+                manualForm.reset();
+                deckA.refresh();
+            } else {
+                alert("Error logging QSO.");
+            }
+        } catch (e) {
+            alert("Connection error.");
+        }
+    };
 }
 
 // --- CONFIGURATION MANAGEMENT ---
@@ -316,7 +439,7 @@ if (confSave) {
             input_adif_files: document.getElementById('conf-adifs').value.split('\n').filter(l => l.trim()),
             varac_log_file: document.getElementById('conf-varac').value.trim(),
             output_adif_file: document.getElementById('conf-output').value.trim(),
-            propagation_file: "/home/timo/.wine/drive_c/VarAC/BBS/B_radio_propagation_report_today.txt", // Keep default for now
+            propagation_file: "/home/timo/.wine/drive_c/VarAC/BBS/B_radio_propagation_report_today.txt",
             update_interval: 5
         };
         const r = await fetch('/api/config', {
@@ -326,16 +449,12 @@ if (confSave) {
         });
         if (r.ok) {
             modal.style.display = 'none';
-            window.location.reload(); // Refresh to apply all path changes
+            window.location.reload();
         } else {
             alert("Error saving configuration.");
         }
     };
 }
-
-const audio = new BridgeAudio();
-const deckA = new BridgeMonitor('a', 'data/source_a.adi', '#ff6600', 'adif');
-const deckB = new BridgeMonitor('b', 'data/source_b.log', '#00f2ff', 'raw');
 
 async function refreshPropagation() {
     try {
@@ -405,7 +524,7 @@ function updateFooter() {
 
 async function init() {
     console.log("BRIDGE: Initializing Data Refresh...");
-    deckA.refresh(); deckB.refresh(); refreshPropagation(); refreshHeartbeat(); refreshPsk();
+    deckA.refresh(); deckB.refresh(); refreshPropagation(); refreshHeartbeat(); if(isPskActive) refreshPsk();
 
     console.log("BRIDGE: Loading Map Data from " + CONFIG.mapDataUrl);
     fetch(CONFIG.mapDataUrl)
@@ -416,7 +535,6 @@ async function init() {
         .then(data => {
             console.log("BRIDGE: Map Data Loaded Successfully (" + data.features.length + " features)");
             worldData = data; 
-            // Force an immediate draw now that we have data
             deckA.draw(); deckB.draw();
             
             setInterval(() => {
@@ -426,32 +544,11 @@ async function init() {
         })
         .catch(e => {
             console.error("BRIDGE: Map Data Failure:", e);
-            // Fallback: still refresh logs even if map fails
             setInterval(() => {
                 deckA.refresh(); deckB.refresh(); refreshPropagation(); refreshHeartbeat();
             }, CONFIG.refreshRate);
         });
 }
 init();
-setInterval(()=>{const c=document.getElementById('current-time');if(c)c.innerText=new Date().toUTCString().split(' ')[4]+' UTC';},1000);
+setInterval(()=>{const c=document.getElementById('utc-clock');if(c)c.innerText=new Date().toUTCString().split(' ')[4]+' UTC';},1000);
 window.onresize=()=>{deckA.draw();deckB.draw();};
-
-const sizeBtn = document.getElementById('size-toggle');
-if(sizeBtn) {
-    sizeBtn.onclick = () => {
-        const isLarge = document.body.classList.toggle('large-font');
-        sizeBtn.innerText = 'SIZE: ' + (isLarge ? 'LARGE' : 'NORMAL');
-        sizeBtn.style.borderColor = isLarge ? 'var(--accent-color)' : 'var(--accent-dim)';
-        deckA.draw(); deckB.draw();
-    };
-}
-
-const pskLimit = document.getElementById('psk-limit');
-if(pskLimit) {
-    pskLimit.onchange = () => {
-        pskSeconds = parseInt(pskLimit.value);
-        isPskActive = pskSeconds > 0;
-        if(isPskActive) { pskLimit.style.borderColor = '#ff00ff'; refreshPsk(); }
-        else { pskLimit.style.borderColor = 'var(--accent-dim)'; pskSpots = []; deckA.draw(); deckB.draw(); }
-    };
-}

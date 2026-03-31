@@ -15,6 +15,7 @@ CONFIG_FILE = "bridge_config.json"
 DEFAULT_CONFIG = {
     "input_adif_files": [os.path.expanduser("~/merged.adi")],
     "output_adif_file": os.path.expanduser("~/bridge/data/merged_output.adi"),
+    "manual_adif_file": os.path.expanduser("~/bridge/data/manual_log.adi"),
     "varac_log_file": os.path.expanduser("~/.wine/drive_c/VarAC/VarAC.log"),
     "propagation_file": os.path.expanduser("~/.wine/drive_c/VarAC/BBS/B_radio_propagation_report_today.txt"),
     "fetch_propagation_data": True,
@@ -31,10 +32,20 @@ def load_config():
                 for key in DEFAULT_CONFIG:
                     if key not in config:
                         config[key] = DEFAULT_CONFIG[key]
+                
+                # Auto-inject manual log into input files if not present
+                if config["manual_adif_file"] not in config["input_adif_files"]:
+                    config["input_adif_files"].append(config["manual_adif_file"])
+                
                 return config
             except:
                 return DEFAULT_CONFIG
-    return DEFAULT_CONFIG
+    
+    # Fallback if no file: ensure manual log is in defaults
+    conf = DEFAULT_CONFIG.copy()
+    if conf["manual_adif_file"] not in conf["input_adif_files"]:
+        conf["input_adif_files"].append(conf["manual_adif_file"])
+    return conf
 
 CONFIG = load_config()
 
@@ -264,6 +275,52 @@ def api_config():
             return jsonify({"status": "error", "message": str(e)}), 500
     return jsonify(CONFIG)
 
+@app.route('/api/add_qso', methods=['POST'])
+def add_qso():
+    try:
+        data = request.json
+        call = data.get('call', '').upper()
+        band = data.get('band', '')
+        mode = data.get('mode', '')
+        rst_s = data.get('rst_sent', '')
+        rst_r = data.get('rst_rcvd', '')
+        name = data.get('name', '')
+        qth = data.get('qth', '')
+        comment = data.get('comment', '')
+        
+        if not call:
+            return jsonify({"status": "error", "message": "Callsign required"}), 400
+            
+        now = datetime.now(timezone.utc)
+        date_str = now.strftime("%Y%m%d")
+        time_str = now.strftime("%H%M%S")
+        
+        record = f"<CALL:{len(call)}>{call} <QSO_DATE:{len(date_str)}>{date_str} <TIME_ON:{len(time_str)}>{time_str} "
+        if band: record += f"<BAND:{len(band)}>{band} "
+        if mode: record += f"<MODE:{len(mode)}>{mode} "
+        if rst_s: record += f"<RST_SENT:{len(rst_s)}>{rst_s} "
+        if rst_r: record += f"<RST_RCVD:{len(rst_r)}>{rst_r} "
+        if name: record += f"<NAME:{len(name)}>{name} "
+        if qth: record += f"<QTH:{len(qth)}>{qth} "
+        if comment: record += f"<COMMENT:{len(comment)}>{comment} "
+        record += "<EOR>\n"
+        
+        target_file = CONFIG["manual_adif_file"]
+        file_exists = os.path.exists(target_file)
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(target_file), exist_ok=True)
+        
+        with open(target_file, 'a', encoding='utf-8') as f:
+            if not file_exists or os.path.getsize(target_file) == 0:
+                f.write("ADIF Export from Bridge\n<EOH>\n")
+            f.write(record)
+            
+        print(f"[MANUAL LOG] Added QSO: {call} on {band}")
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/data/heartbeat.json')
 def get_heartbeat():
     hb_data = {"last_seen": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}
@@ -285,6 +342,6 @@ def static_files(path):
     return send_from_directory('.', path)
 
 if __name__ == "__main__":
-    print("--- LOG CONTROL CENTER by OH8XAT v1.1 ACTIVE ---")
+    print("--- LOG CONTROL CENTER by OH8XAT v1.2 ACTIVE ---")
     print("UI available at: http://localhost:5000")
     app.run(host='0.0.0.0', port=5000)

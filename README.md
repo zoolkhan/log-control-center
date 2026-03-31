@@ -1,14 +1,29 @@
-# Log Control Center by OH8XAT v1.0
+# Log Control Center by OH8XAT v1.2
 
 A real-time dual-source telemetry dashboard and ADIF log merger for Amateur Radio.  
 Built for high-performance station monitoring and seamless log consolidation.
 
 ## 🚀 Key Features
-- **ADIF Engine:** Automatically merges up to 10 input ADIF logs with robust deduplication.
-- **Real-Time Tactical Map:** Visualizes contacts dynamically on an offline-capable HTML5 Canvas map.
+- **ADIF Engine:** Automatically merges multiple input ADIF logs with robust deduplication.
+- **Manual QSO Entry:** Full-screen tactical interface for manual log entry.
+- **Real-Time Tactical Maps:** Dual-deck visualization (Tactical A/B) with independent zoom controls.
 - **Log Watcher:** Streams live updates from VarAC (or other raw log sources) in real-time.
 - **Web Configurator:** Manage all file paths directly through the built-in "CONFIG" dashboard.
-- **Aesthetic:** High-contrast "Tactical Telemetry" CRT theme with optional audio alerts.
+- **PSK Reporter Integration:** Live spot visualization with magenta tactical lines and adjustable time windows.
+- **Persistence:** UI settings (Size, Audio, Zoom, PSK) are preserved across sessions.
+- **Aesthetic:** High-contrast "Tactical Telemetry" CRT theme with sci-fi glow and audio alerts.
+
+---
+
+## 🕒 Changelog (v1.2)
+- **NEW:** Manual QSO Entry system with full-screen tactical modal.
+- **NEW:** Tactical UI Persistence (settings save automatically to local storage).
+- **NEW:** Individual ZOOM controls for Tactical A and Tactical B maps.
+- **NEW:** Cycling PSK Reporter button (OFF / 15m / 30m / 1h).
+- **ENHANCED:** "Smart Layout" - Maps stack vertically for East-West contacts (e.g., North America) to maximize width.
+- **ENHANCED:** Set defaults to LARGE UI, Audio ON, and PSK 1H.
+- **FIXED:** UI button synchronization and clock heartbeat issues.
+- **FIXED:** ADIF engine robustness and manual log auto-injection.
 
 ---
 
@@ -21,22 +36,14 @@ sudo apt update
 sudo apt install python3 python3-venv
 ```
 
-### 2. Download and Environment Setup
-Clone the repository (or copy the files) and set up the virtual environment:
+### 2. Setup Environment
 ```bash
-cd ~/bridge
 python3 -m venv venv
-```
-
-### 3. Install Dependencies
-Activate the environment and install required libraries:
-```bash
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Running the Application
-Start the server:
+### 3. Running the Application
 ```bash
 python3 app.py
 ```
@@ -44,19 +51,5 @@ Open your browser and go to: **`http://localhost:5000`**
 
 ---
 
-## ⚙️ Configuration
-The first time you run the app, click the red **CONFIG** button in the header.  
-From there, you can define:
-1. **ADIF Input Files:** Paths to your various logger output files (one per line).
-2. **VarAC Log Path:** The path to your `VarAC.log` file for the live feed (Deck B).
-3. **Output Merged ADIF:** Where you want the consolidated, deduplicated log to be saved.
-
-The background engine monitors these files every 5 seconds and updates the dashboard automatically when changes are detected.
-
----
-
 ## ⚖️ License
-This project is licensed under the **GNU General Public License v3.0**.  
-See the [LICENSE](LICENSE) file for more details.
-
-**Author:** OH8XAT (2026)
+GNU GPLv3. Author: OH8XAT (2026)
