@@ -6,6 +6,7 @@ Built for high-performance station monitoring and seamless log consolidation.
 ## 🚀 Key Features
 - **ADIF Engine:** Automatically merges multiple input ADIF logs with robust deduplication.
 - **Manual QSO Entry:** Full-screen tactical interface for manual log entry.
+- **Windows Control GUI:** Integrated desktop control panel for the standalone EXE version.
 - **Real-Time Tactical Maps:** Dual-deck visualization (Tactical A/B) with independent zoom controls.
 - **Log Watcher:** Streams live updates from VarAC (or other raw log sources) in real-time.
 - **Web Configurator:** Manage all file paths directly through the built-in "CONFIG" dashboard.
@@ -16,6 +17,7 @@ Built for high-performance station monitoring and seamless log consolidation.
 ---
 
 ## 🕒 Changelog (v1.2)
+- **NEW:** Windows Desktop Control GUI (for Launching Browser and Shutting down).
 - **NEW:** Manual QSO Entry system with full-screen tactical modal.
 - **NEW:** Tactical UI Persistence (settings save automatically to local storage).
 - **NEW:** Individual ZOOM controls for Tactical A and Tactical B maps.
