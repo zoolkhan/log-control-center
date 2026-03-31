@@ -18,6 +18,8 @@ DEFAULT_CONFIG = {
     "manual_adif_file": os.path.expanduser("~/bridge/data/manual_log.adi"),
     "varac_log_file": os.path.expanduser("~/.wine/drive_c/VarAC/VarAC.log"),
     "propagation_file": os.path.expanduser("~/.wine/drive_c/VarAC/BBS/B_radio_propagation_report_today.txt"),
+    "station_locator": "KP10RQ",
+    "my_call": "OH8XAT",
     "fetch_propagation_data": True,
     "propagation_fetch_interval": 14400, # 4 hours in seconds
     "update_interval": 5
@@ -280,6 +282,8 @@ def add_qso():
     try:
         data = request.json
         call = data.get('call', '').upper()
+        date_str = data.get('date', '').strip()
+        time_str = data.get('time', '').strip()
         band = data.get('band', '')
         mode = data.get('mode', '')
         rst_s = data.get('rst_sent', '')
@@ -291,9 +295,10 @@ def add_qso():
         if not call:
             return jsonify({"status": "error", "message": "Callsign required"}), 400
             
-        now = datetime.now(timezone.utc)
-        date_str = now.strftime("%Y%m%d")
-        time_str = now.strftime("%H%M%S")
+        now_utc = datetime.now(timezone.utc)
+        if not date_str: date_str = now_utc.strftime("%Y%m%d")
+        if not time_str: time_str = now_utc.strftime("%H%M%S")
+        elif len(time_str) == 4: time_str += "00" # Add seconds if only HHMM provided
         
         record = f"<CALL:{len(call)}>{call} <QSO_DATE:{len(date_str)}>{date_str} <TIME_ON:{len(time_str)}>{time_str} "
         if band: record += f"<BAND:{len(band)}>{band} "
@@ -328,7 +333,7 @@ def get_heartbeat():
 
 @app.route('/psk_proxy')
 def psk_proxy():
-    call = request.args.get('call', 'OH8XAT')
+    call = request.args.get('call', CONFIG.get("my_call", "OH8XAT"))
     seconds = request.args.get('seconds', '3600')
     url = f"https://pskreporter.info/query?senderCallsign={call}&flow=receptionReport&lastSeconds={seconds}"
     try:

@@ -6,6 +6,9 @@ pip install pyinstaller
 
 echo Building Standalone EXE...
 pyinstaller --noconfirm --onefile --windowed ^
+    --hidden-import pystray ^
+    --hidden-import PIL ^
+    --hidden-import pystray._win32 ^
     --add-data "index.html;." ^
     --add-data "script.js;." ^
     --add-data "style.css;." ^

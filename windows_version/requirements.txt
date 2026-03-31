@@ -1,3 +1,5 @@
 Flask
 requests
 adif-io
+pystray
+Pillow

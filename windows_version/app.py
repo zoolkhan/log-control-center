@@ -10,6 +10,14 @@ from pathlib import Path
 import adif_io
 import xml.etree.ElementTree as ET
 
+# Tray support (moved to top for PyInstaller)
+try:
+    import pystray
+    from PIL import Image, ImageDraw
+    HAS_SYSTRAY = True
+except ImportError:
+    HAS_SYSTRAY = False
+
 # Handle paths when running as a compiled EXE (PyInstaller)
 def get_base_path():
     if getattr(sys, 'frozen', False):
@@ -27,6 +35,8 @@ DEFAULT_CONFIG = {
     "output_adif_file": str(Path("data") / "merged_output.adi"),
     "manual_adif_file": str(Path("data") / "manual_log.adi"),
     "varac_log_file": str(HOME / "Documents" / "VarAC" / "VarAC.log"),
+    "station_locator": "KP10RQ",
+    "my_call": "OH8XAT",
     "fetch_propagation_data": True,
     "propagation_fetch_interval": 14400, # 4 hours in seconds
     "update_interval": 5
@@ -288,7 +298,7 @@ def get_source_b():
 
 @app.route('/psk_proxy')
 def psk_proxy():
-    call = request.args.get('call', 'OH8XAT')
+    call = request.args.get('call', CONFIG.get("my_call", "OH8XAT"))
     seconds = request.args.get('seconds', '3600')
     url = f"https://pskreporter.info/query?senderCallsign={call}&flow=receptionReport&lastSeconds={seconds}"
     try:
@@ -305,6 +315,8 @@ def add_qso():
     try:
         data = request.json
         call = data.get('call', '').upper()
+        date_str = data.get('date', '').strip()
+        time_str = data.get('time', '').strip()
         band = data.get('band', '')
         mode = data.get('mode', '')
         rst_s = data.get('rst_sent', '')
@@ -316,9 +328,10 @@ def add_qso():
         if not call:
             return jsonify({"status": "error", "message": "Callsign required"}), 400
             
-        now = datetime.now(timezone.utc)
-        date_str = now.strftime("%Y%m%d")
-        time_str = now.strftime("%H%M%S")
+        now_utc = datetime.now(timezone.utc)
+        if not date_str: date_str = now_utc.strftime("%Y%m%d")
+        if not time_str: time_str = now_utc.strftime("%H%M%S")
+        elif len(time_str) == 4: time_str += "00" # Add seconds if only HHMM provided
         
         record = f"<CALL:{len(call)}>{call} <QSO_DATE:{len(date_str)}>{date_str} <TIME_ON:{len(time_str)}>{time_str} "
         if band: record += f"<BAND:{len(band)}>{band} "
@@ -345,7 +358,7 @@ def add_qso():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
-    print("--- LOG CONTROL CENTER by OH8XAT v1.2 Active ---")
+    print("--- LOG CONTROL CENTER by OH8XAT v1.3 Active ---")
     
     # If running as a frozen EXE (PyInstaller), launch a small control GUI
     if getattr(sys, 'frozen', False):
@@ -360,23 +373,59 @@ if __name__ == "__main__":
 
         def open_browser():
             webbrowser.open("http://localhost:5000")
+            
+        def show_window(icon, item):
+            icon.stop()
+            root.after(0, root.deiconify)
+            
+        def quit_window(icon, item):
+            icon.stop()
+            os._exit(0)
+            
+        def hide_window():
+            if not HAS_SYSTRAY:
+                messagebox.showinfo("Error", "pystray and Pillow packages are required for Systray functionality.")
+                return
+            root.withdraw()
+            
+            # Create a procedural icon (Cyberpunk/Tactical theme)
+            img = Image.new('RGB', (64, 64), (5, 10, 10))
+            dc = ImageDraw.Draw(img)
+            dc.rectangle((16, 16, 48, 48), fill=(0, 242, 255))
+            dc.rectangle((24, 24, 40, 40), fill=(255, 102, 0))
+            
+            menu = pystray.Menu(
+                pystray.MenuItem('Show Control Center', show_window, default=True),
+                pystray.MenuItem('Exit Bridge', quit_window)
+            )
+            icon = pystray.Icon("LogControlCenter", img, "OUTPOST 23 Bridge", menu)
+            # Run in background to prevent blocking Tkinter
+            threading.Thread(target=icon.run, daemon=True).start()
+
+        def on_unmap(event):
+            if root.state() == 'iconic':
+                hide_window()
 
         # Start Flask in a background thread
         threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False), daemon=True).start()
 
         # Create Control Window
         root = tk.Tk()
-        root.title("OH8XAT Bridge v1.2")
-        root.geometry("300x150")
+        root.title("OH8XAT Bridge v1.3")
+        root.geometry("300x190")
         root.configure(bg='#050a0a')
-        root.protocol("WM_DELETE_WINDOW", on_exit)
+        root.protocol("WM_DELETE_WINDOW", hide_window) # X minimizes to tray
+        root.bind("<Unmap>", on_unmap) # Minimize button minimizes to tray
         
         # Styling
         label = tk.Label(root, text="BRIDGE STATUS: ACTIVE", fg="#00f2ff", bg="#050a0a", font=("Courier", 10, "bold"))
-        label.pack(pady=15)
+        label.pack(pady=10)
         
         btn_open = tk.Button(root, text="LAUNCH BROWSER", command=open_browser, fg="#000", bg="#00f2ff", font=("Courier", 9, "bold"), width=20)
         btn_open.pack(pady=5)
+        
+        btn_tray = tk.Button(root, text="MINIMIZE TO TRAY", command=hide_window, fg="#fff", bg="#007c82", font=("Courier", 9, "bold"), width=20)
+        btn_tray.pack(pady=5)
         
         btn_exit = tk.Button(root, text="SHUTDOWN SERVER", command=on_exit, fg="#fff", bg="#ff3c00", font=("Courier", 9, "bold"), width=20)
         btn_exit.pack(pady=5)

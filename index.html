@@ -13,15 +13,16 @@
     <div class="scanlines"></div>
     <div class="bridge-container">
         <header class="bridge-header">
-            <div class="status-item">Log Control Center by OH8XAT v1.2 | LOCAL BRIDGE ACTIVE 
-                <button id="manual-log-btn" style="margin-left:15px; background:transparent; color:#ff00ff; border:1px solid #ff00ff; font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">MANUAL LOG</button>
-                <button id="audio-toggle" style="margin-left:15px; background:transparent; color:var(--accent-color); border:1px solid var(--accent-color); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">AUDIO: OFF</button> 
-                <button id="config-open" style="margin-left:15px; background:transparent; color:var(--alert-color); border:1px solid var(--alert-color); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">CONFIG</button>
+            <div class="status-item">Log Control Center by OH8XAT v1.3 | LOCAL BRIDGE ACTIVE 
                 <button id="psk-cycle" style="margin-left:10px; background:transparent; color:#ff00ff; border:1px solid #ff00ff; font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">PSK: 1 HOUR</button>
+                <button id="autoflip-toggle" style="margin-left:10px; background:transparent; color:var(--accent-color); border:1px solid var(--accent-color); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">AUTOFLIP: ON</button>
+                <button id="font-toggle" style="margin-left:10px; background:transparent; color:var(--accent-color); border:1px solid var(--accent-color); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">SIZE: NORM</button>
+                <button id="config-open" style="margin-left:15px; background:transparent; color:var(--alert-color); border:1px solid var(--alert-color); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">CONFIG</button>
             </div>
             <div class="header-right">
                 <span id="utc-clock">00:00:00 UTC</span>
-                <button id="font-toggle" style="margin-left:10px; background:transparent; color:var(--accent-color); border:1px solid var(--accent-color); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">SIZE: NORM</button>
+                <button id="manual-log-btn" style="margin-left:15px; background:transparent; color:#ff00ff; border:1px solid #ff00ff; font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">MANUAL LOG</button>
+                <button id="audio-toggle" style="margin-left:15px; background:transparent; color:var(--accent-color); border:1px solid var(--accent-color); font-family:inherit; cursor:pointer; font-size:0.7rem; padding:2px 5px;">AUDIO: OFF</button>
             </div>
         </header>
 
@@ -90,6 +91,16 @@
             <form id="manual-log-form" class="modal-form">
                 <div class="form-row">
                     <div class="form-group">
+                        <label>DATE (YYYYMMDD)</label>
+                        <input type="text" id="qso-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>TIME (HHMM)</label>
+                        <input type="text" id="qso-time" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
                         <label>CALLSIGN</label>
                         <input type="text" id="qso-call" required>
                     </div>
@@ -142,6 +153,16 @@
                 <span id="config-close" class="close-btn">&times;</span>
             </header>
             <div class="modal-form">
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom:15px;">
+                        <label>STATION LOCATOR (e.g. KP10RQ)</label>
+                        <input type="text" id="conf-locator" style="width:100%;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:15px;">
+                        <label>MY CALLSIGN (e.g. OH8XAT)</label>
+                        <input type="text" id="conf-call" style="width:100%;">
+                    </div>
+                </div>
                 <div class="form-group" style="margin-bottom:15px;">
                     <label>ADIF INPUT FILES (One per line)</label>
                     <textarea id="conf-adifs" rows="4" style="width:100%; height:100px;"></textarea>

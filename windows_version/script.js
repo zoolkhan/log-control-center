@@ -21,6 +21,7 @@ const setSetting = (key, val) => localStorage.setItem('bridge_' + key, JSON.stri
 
 let isPskActive = getSetting('psk_active', true);
 let pskSeconds = getSetting('psk_seconds', 3600);
+let isAutoFlipActive = getSetting('autoflip', true);
 
 const GLOBAL_CALL_CACHE = {};
 const PREFIX_MAP = {'DL':[51,10],'F':[46,2],'G':[54,-2],'M':[54,-2],'K':[37,-95],'W':[37,-95],'OH':[64,26],'LA':[60,10],'SM':[60,15],'OZ':[56,10],'UR':[49,31],'UA':[55,37],'4Z':[31,35],'4X':[32,34],'ES':[58,25],'YL':[56,24],'LY':[55,23],'SP':[52,19],'OK':[49,14],'OM':[48,19],'HA':[47,19],'S5':[46,14],'YU':[44,20],'LZ':[42,25],'SV':[38,23],'EA':[40,-3],'I':[41,12],'HB':[46,8],'OE':[47,14],'PA':[52,5],'ON':[50,4]};
@@ -113,7 +114,7 @@ class BridgeMonitor {
         const latestCoords = latest ? this.getCoords(latest) : null;
 
         // Dynamic Tactical Layout arrangement
-        if (latestCoords && this.id === 'a') {
+        if (isAutoFlipActive && latestCoords && this.id === 'a') {
             const latDiff = Math.abs(latestCoords.lat - CONFIG.homeCoords.lat);
             const lonDiff = Math.abs(latestCoords.lon - CONFIG.homeCoords.lon);
             const tacticalSection = document.querySelector('.tactical-monitor .split-v') || document.querySelector('.tactical-monitor .split-h');
@@ -123,6 +124,11 @@ class BridgeMonitor {
                 } else {
                     tacticalSection.className = 'split-v';
                 }
+            }
+        } else if (!isAutoFlipActive) {
+            const tacticalSection = document.querySelector('.tactical-monitor .split-v') || document.querySelector('.tactical-monitor .split-h');
+            if (tacticalSection && tacticalSection.className !== 'split-v') {
+                tacticalSection.className = 'split-v';
             }
         }
 
@@ -370,6 +376,23 @@ if(pskCycleBtn) {
     };
 }
 
+const autoflipBtn = document.getElementById('autoflip-toggle');
+if(autoflipBtn) {
+    const updateAutoflipBtn = () => {
+        autoflipBtn.innerText = 'AUTOFLIP: ' + (isAutoFlipActive ? 'ON' : 'OFF');
+        autoflipBtn.style.color = isAutoFlipActive ? 'var(--accent-color)' : 'var(--accent-dim)';
+        autoflipBtn.style.borderColor = isAutoFlipActive ? 'var(--accent-color)' : 'var(--accent-dim)';
+    };
+    updateAutoflipBtn();
+    autoflipBtn.onclick = () => {
+        isAutoFlipActive = !isAutoFlipActive;
+        setSetting('autoflip', isAutoFlipActive);
+        updateAutoflipBtn();
+        deckA.draw();
+        deckB.draw();
+    };
+}
+
 // --- MANUAL LOG MANAGEMENT ---
 const manualModal = document.getElementById('manual-log-modal');
 const manualBtn = document.getElementById('manual-log-btn');
@@ -377,7 +400,15 @@ const manualClose = document.getElementById('close-modal');
 const manualCancel = document.getElementById('cancel-qso');
 const manualForm = document.getElementById('manual-log-form');
 
-if (manualBtn) manualBtn.onclick = () => { manualModal.style.display = 'block'; };
+if (manualBtn) manualBtn.onclick = () => { 
+    const now = new Date();
+    const dateStr = now.getUTCFullYear().toString() + (now.getUTCMonth()+1).toString().padStart(2,'0') + now.getUTCDate().toString().padStart(2,'0');
+    const timeStr = now.getUTCHours().toString().padStart(2,'0') + now.getUTCMinutes().toString().padStart(2,'0');
+    document.getElementById('qso-date').value = dateStr;
+    document.getElementById('qso-time').value = timeStr;
+    manualModal.style.display = 'block'; 
+};
+
 if (manualClose) manualClose.onclick = () => { manualModal.style.display = 'none'; };
 if (manualCancel) manualCancel.onclick = () => { manualModal.style.display = 'none'; };
 
@@ -385,6 +416,8 @@ if (manualForm) {
     manualForm.onsubmit = async (e) => {
         e.preventDefault();
         const data = {
+            date: document.getElementById('qso-date').value,
+            time: document.getElementById('qso-time').value,
             call: document.getElementById('qso-call').value,
             band: document.getElementById('qso-band').value,
             mode: document.getElementById('qso-mode').value,
@@ -422,12 +455,19 @@ const confSave = document.getElementById('config-save');
 
 if (confOpen) {
     confOpen.onclick = async () => {
-        const r = await fetch('/api/config');
-        const cfg = await r.json();
-        document.getElementById('conf-adifs').value = cfg.input_adif_files.join('\n');
-        document.getElementById('conf-varac').value = cfg.varac_log_file;
-        document.getElementById('conf-output').value = cfg.output_adif_file;
-        modal.style.display = 'block';
+        try {
+            const r = await fetch('/api/config');
+            if (!r.ok) throw new Error("Fetch failed");
+            const cfg = await r.json();
+            document.getElementById('conf-locator').value = cfg.station_locator || "KP10RQ";
+            document.getElementById('conf-call').value = cfg.my_call || "OH8XAT";
+            document.getElementById('conf-adifs').value = cfg.input_adif_files.join('\n');
+            document.getElementById('conf-varac').value = cfg.varac_log_file;
+            document.getElementById('conf-output').value = cfg.output_adif_file;
+            modal.style.display = 'block';
+        } catch (e) {
+            console.error("Config fetch failed:", e);
+        }
     };
 }
 
@@ -436,22 +476,28 @@ if (confClose) confClose.onclick = () => { modal.style.display = 'none'; };
 if (confSave) {
     confSave.onclick = async () => {
         const newCfg = {
+            station_locator: document.getElementById('conf-locator').value.trim().toUpperCase(),
+            my_call: document.getElementById('conf-call').value.trim().toUpperCase(),
             input_adif_files: document.getElementById('conf-adifs').value.split('\n').filter(l => l.trim()),
             varac_log_file: document.getElementById('conf-varac').value.trim(),
             output_adif_file: document.getElementById('conf-output').value.trim(),
             propagation_file: "/home/timo/.wine/drive_c/VarAC/BBS/B_radio_propagation_report_today.txt",
             update_interval: 5
         };
-        const r = await fetch('/api/config', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newCfg)
-        });
-        if (r.ok) {
-            modal.style.display = 'none';
-            window.location.reload();
-        } else {
-            alert("Error saving configuration.");
+        try {
+            const r = await fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newCfg)
+            });
+            if (r.ok) {
+                modal.style.display = 'none';
+                window.location.reload();
+            } else {
+                alert("Error saving configuration.");
+            }
+        } catch (e) {
+            alert("Connection error: " + e.message);
         }
     };
 }
@@ -524,6 +570,28 @@ function updateFooter() {
 
 async function init() {
     console.log("BRIDGE: Initializing Data Refresh...");
+    
+    // Fetch server configuration first to get the station locator
+    try {
+        const configResp = await fetch('/api/config');
+        if (configResp.ok) {
+            const serverCfg = await configResp.json();
+            if (serverCfg.station_locator) {
+                const coords = maidenheadToLatLon(serverCfg.station_locator);
+                if (coords) {
+                    CONFIG.homeCoords = coords;
+                    console.log("BRIDGE: Station Locator set to " + serverCfg.station_locator + " (" + coords.lat + ", " + coords.lon + ")");
+                }
+            }
+            if (serverCfg.my_call) {
+                CONFIG.myCall = serverCfg.my_call;
+                console.log("BRIDGE: Callsign set to " + serverCfg.my_call);
+            }
+        }
+    } catch (e) {
+        console.error("BRIDGE: Failed to fetch server config, using defaults:", e);
+    }
+
     deckA.refresh(); deckB.refresh(); refreshPropagation(); refreshHeartbeat(); if(isPskActive) refreshPsk();
 
     console.log("BRIDGE: Loading Map Data from " + CONFIG.mapDataUrl);
