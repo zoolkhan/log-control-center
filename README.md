@@ -15,6 +15,10 @@ Built for high-performance station monitoring and seamless log consolidation.
 - **Aesthetic:** High-contrast "Tactical Telemetry" CRT theme with sci-fi glow and audio alerts.
 
 ---
+<img width="1559" height="872" alt="image" src="https://github.com/user-attachments/assets/ed37d175-d788-456a-b8e1-e0373201c7f1" />
+<img width="1566" height="881" alt="image" src="https://github.com/user-attachments/assets/e84d7c60-673e-4a6b-910f-533ada393852" />
+<img width="1550" height="862" alt="image" src="https://github.com/user-attachments/assets/6d73194b-4ae5-4aa1-83b6-f645209a6b99" />
+<img width="1080" height="2376" alt="image" src="https://github.com/user-attachments/assets/4af39621-8f12-4fd5-91f8-2442d075165d" />
 
 ## 🕒 Changelog (v1.2)
 - **NEW:** Windows Desktop Control GUI (for Launching Browser and Shutting down).
