@@ -37,7 +37,7 @@ Built for high-performance station monitoring and seamless log consolidation.
 
 ### 🪟 Windows (Recommended for Windows Users)
 **Download the standalone executable:**  
-👉 [**Download LogControlCenterBridge_v1.2.exe**](https://github.com/zoolkhan/log-control-center/releases/download/v1.2/LogControlCenterBridge_v1.2.exe)
+👉 [**Download LogControlCenterBridge_v1.2.exe**](https://github.com/zoolkhan/log-control-center/releases/download/v1.3/LogControlCenterBridge_v1.3.exe)
 
 *No installation required. Just download, run the EXE, and it will handle everything.*
 
