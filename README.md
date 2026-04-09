@@ -32,7 +32,8 @@ Built for high-performance station monitoring and seamless log consolidation.
 
 ### 🪟 Windows (Recommended for Windows Users)
 **Download the standalone executable:**  
-👉 [**Download LogControlCenter_v1.3c.exe**](https://github.com/zoolkhan/log-control-center/releases/download/v1.3c/LogControlCenter_v1.3c.exe)
+👉 [**Download LogControlCenter_v1.3c.exe**](https://github.com/zoolkhan/log-control-center/releases/download/v1.3c/LogControlCenter_v1.3c.exe)  
+*(Optional: Verify integrity with the [MD5 Checksum](https://github.com/zoolkhan/log-control-center/releases/download/v1.3c/LogControlCenter_v1.3c.exe.md5))*
 
 *No installation required. Just download, run the EXE, and it will handle everything.*
 

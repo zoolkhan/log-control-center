@@ -7,6 +7,7 @@ A real-time station monitor and ADIF log merger.
 ### Option A: Standalone Executable (Recommended)
 **No installation required!**
 1. [**Download LogControlCenter_v1.3c.exe**](https://github.com/zoolkhan/log-control-center/releases/download/v1.3c/LogControlCenter_v1.3c.exe)
+   *(Optional: Verify integrity with the [MD5 Checksum](https://github.com/zoolkhan/log-control-center/releases/download/v1.3c/LogControlCenter_v1.3c.exe.md5))*
 2. Double-click the EXE to launch the Control Panel.
 3. Click **LAUNCH BROWSER** to open the bridge.
 
