@@ -4,3 +4,8 @@ __pycache__/
 .DS_Store
 bridge_config.json
 data/merged_output.adi
+bridge_local_link.log
+bridge_local_link.log.*
+nohup.out
+*.bak
+*.tmp
