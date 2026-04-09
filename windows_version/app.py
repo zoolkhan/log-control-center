@@ -11,12 +11,15 @@ import adif_io
 import xml.etree.ElementTree as ET
 
 # Tray support (moved to top for PyInstaller)
+HAS_SYSTRAY = False
 try:
     import pystray
     from PIL import Image, ImageDraw
     HAS_SYSTRAY = True
-except ImportError:
-    HAS_SYSTRAY = False
+except Exception as e:
+    # We'll print to console, which is visible if built with --console or in the log
+    print(f"[SYSTRAY ERROR] Failed to import dependencies: {e}")
+    # Also attempt to show a messagebox if possible, though HAS_SYSTRAY check handles it in the UI
 
 # Handle paths when running as a compiled EXE (PyInstaller)
 def get_base_path():
@@ -358,7 +361,7 @@ def add_qso():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
-    print("--- LOG CONTROL CENTER by OH8XAT v1.3 Active ---")
+    print("--- LOG CONTROL CENTER by OH8XAT v1.3c Active ---")
     
     # If running as a frozen EXE (PyInstaller), launch a small control GUI
     if getattr(sys, 'frozen', False):
@@ -411,7 +414,7 @@ if __name__ == "__main__":
 
         # Create Control Window
         root = tk.Tk()
-        root.title("OH8XAT Bridge v1.3")
+        root.title("OH8XAT Bridge v1.3c")
         root.geometry("300x190")
         root.configure(bg='#050a0a')
         root.protocol("WM_DELETE_WINDOW", hide_window) # X minimizes to tray

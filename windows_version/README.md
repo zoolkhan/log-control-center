@@ -1,14 +1,15 @@
-# Log Control Center by OH8XAT v1.3 (Windows Edition)
+# Log Control Center by OH8XAT v1.3c (Windows Edition)
 
-A real-time dual-source telemetry dashboard and ADIF log merger for Amateur Radio.
+A real-time station monitor and ADIF log merger.
 
 ## 🚀 Windows Quick Start
 
 ### Option A: Standalone Executable (Recommended)
-**No installation required!**  
-1. [**Download LogControlCenterBridge_v1.3.exe**](https://github.com/zoolkhan/log-control-center/releases/download/v1.3/LogControlCenterBridge_v1.3.exe)  
-2. Double-click the EXE to launch the Control Panel.  
+**No installation required!**
+1. [**Download LogControlCenter_v1.3c.exe**](https://github.com/zoolkhan/log-control-center/releases/download/v1.3c/LogControlCenter_v1.3c.exe)
+2. Double-click the EXE to launch the Control Panel.
 3. Click **LAUNCH BROWSER** to open the bridge.
+
 
 ---
 

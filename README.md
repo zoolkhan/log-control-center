@@ -1,4 +1,4 @@
-# Log Control Center by OH8XAT v1.2
+# Log Control Center by OH8XAT v1.3c
 
 A real-time dual-source telemetry dashboard and ADIF log merger for Amateur Radio.  
 Built for high-performance station monitoring and seamless log consolidation.
@@ -20,16 +20,11 @@ Built for high-performance station monitoring and seamless log consolidation.
 <img width="1550" height="862" alt="image" src="https://github.com/user-attachments/assets/6d73194b-4ae5-4aa1-83b6-f645209a6b99" />
 <img width="1080" height="2376" alt="image" src="https://github.com/user-attachments/assets/4af39621-8f12-4fd5-91f8-2442d075165d" />
 
-## 🕒 Changelog (v1.2)
-- **NEW:** Windows Desktop Control GUI (for Launching Browser and Shutting down).
-- **NEW:** Manual QSO Entry system with full-screen tactical modal.
-- **NEW:** Tactical UI Persistence (settings save automatically to local storage).
-- **NEW:** Individual ZOOM controls for Tactical A and Tactical B maps.
-- **NEW:** Cycling PSK Reporter button (OFF / 15m / 30m / 1h).
-- **ENHANCED:** "Smart Layout" - Maps stack vertically for East-West contacts (e.g., North America) to maximize width.
-- **ENHANCED:** Set defaults to LARGE UI, Audio ON, and PSK 1H.
+## 🕒 Changelog (v1.3c)
+- **NEW:** Improved Windows Control GUI with system tray support.
+- **NEW:** Performance optimizations and bug fixes in ADIF engine.
+- **NEW:** Updated Tactical UI with v1.3c features.
 - **FIXED:** UI button synchronization and clock heartbeat issues.
-- **FIXED:** ADIF engine robustness and manual log auto-injection.
 
 ---
 
@@ -37,7 +32,7 @@ Built for high-performance station monitoring and seamless log consolidation.
 
 ### 🪟 Windows (Recommended for Windows Users)
 **Download the standalone executable:**  
-👉 [**Download LogControlCenterBridge_v1.2.exe**](https://github.com/zoolkhan/log-control-center/releases/download/v1.3/LogControlCenterBridge_v1.3.exe)
+👉 [**Download LogControlCenter_v1.3c.exe**](https://github.com/zoolkhan/log-control-center/releases/download/v1.3c/LogControlCenter_v1.3c.exe)
 
 *No installation required. Just download, run the EXE, and it will handle everything.*
 

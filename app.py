@@ -4,11 +4,39 @@ import time
 import requests
 import threading
 import xml.etree.ElementTree as ET
+import logging
+from logging.handlers import RotatingFileHandler
 from flask import Flask, send_from_directory, jsonify, Response, request, make_response
 from datetime import datetime, timezone
 import adif_io
 
 app = Flask(__name__)
+
+# --- LOGGING CONFIGURATION ---
+LOG_FILE = "bridge_local_link.log"
+handler = RotatingFileHandler(LOG_FILE, maxBytes=1024*1024, backupCount=1)
+handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.INFO)
+
+# Also capture werkzeug logs
+werkzeug_log = logging.getLogger('werkzeug')
+werkzeug_log.addHandler(handler)
+werkzeug_log.setLevel(logging.INFO)
+
+# Redirect stdout/stderr to logger
+class LoggerWriter:
+    def __init__(self, level):
+        self.level = level
+    def write(self, message):
+        if message.strip():
+            self.level(message.strip())
+    def flush(self):
+        pass
+
+import sys
+# sys.stdout = LoggerWriter(app.logger.info)
+# sys.stderr = LoggerWriter(app.logger.error)
 
 # --- CONFIGURATION (Loaded from bridge_config.json) ---
 CONFIG_FILE = "bridge_config.json"
@@ -347,6 +375,6 @@ def static_files(path):
     return send_from_directory('.', path)
 
 if __name__ == "__main__":
-    print("--- LOG CONTROL CENTER by OH8XAT v1.2 ACTIVE ---")
+    print("--- LOG CONTROL CENTER by OH8XAT v1.3c ACTIVE ---")
     print("UI available at: http://localhost:5000")
     app.run(host='0.0.0.0', port=5000)
